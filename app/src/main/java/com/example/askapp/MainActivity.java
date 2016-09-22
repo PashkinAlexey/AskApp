@@ -1,11 +1,15 @@
 package com.example.askapp;
 
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
@@ -42,25 +46,52 @@ public class MainActivity extends AppCompatActivity {
 
         h = new Handler() {
             public void handleMessage(android.os.Message msg) {
+                //получаем мап
+                Map<String, Object> handMap=(Map<String, Object>)msg.obj;
+                //получаем объекты из мап
+                final JSONObject JOBJ=(JSONObject)handMap.get("json");
+                SimpleAdapter sAdapter=(SimpleAdapter)handMap.get("adapter");
                 //отключаем видимый Scroll
                 lvMain.setScrollContainer(false);
                 //сохраняем положение ListView
                 Parcelable state = lvMain.onSaveInstanceState();
                 //обновляем ListView
-                lvMain.setAdapter((SimpleAdapter)msg.obj);
+                lvMain.setAdapter(sAdapter);
                 //Восстанавливаем положение ListView
                 lvMain.onRestoreInstanceState(state);
+                //вешаем обработчик нажатия
+                lvMain.setOnItemClickListener(new OnItemClickListener() {
+                    public void onItemClick(AdapterView<?> parent, View view,
+                                            int position, long id) {
+                        try {
+                            JSONArray jArr=JOBJ.getJSONArray("objects");
+                            JSONObject clickedObject=(JSONObject)jArr.get(position);
+                            String clickedId=clickedObject.getString("id");
+                            Intent intent= new Intent(MainActivity.this, TransportActivity.class);
+                            intent.putExtra("clickedId", clickedId);
+                            startActivity(intent);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
             }
         };
         Thread t = new Thread(new Runnable() {
             Message msg;
             public void run() {
-                JSONObject result;
                 while(true)
                 {
                     try {
-                        result=JSONParser.getJSONFromUrl(URL);
-                        msg = h.obtainMessage(1, 0, 0, listCreator(result));
+                        JSONObject jObj=JSONParser.getJSONFromUrl(URL);
+                        SimpleAdapter sAdapter=listCreator(jObj);
+                        //создаем мап для передачи 2х объектов хендлеру
+                        Map<String, Object> handMap = new HashMap<String, Object>();
+                        handMap.put("adapter",sAdapter);
+                        handMap.put("json",jObj);
+                        //создаем сообщение для хендлера
+                        msg = h.obtainMessage(1, 0, 0, handMap);
+                        //передаем сообщение
                         h.sendMessage(msg);
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -83,15 +114,14 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<Map<String, Object>> data = new ArrayList<Map<String, Object>>();
         Map<String, Object> m;
         objects = jObj.getJSONArray("objects");
-        //Log.d(TAG, objects.getString("name"));
         for (int i=0; i<objects.length(); i++){
             m = new HashMap<String, Object>();
             JSONObject objCurrent=(JSONObject) objects.get(i);
             if (!objCurrent.getString("statenum").equals("")){
-                m.put(ATTRIBUTE_NAME_STATENUMS, objCurrent.getString("statenum"));
+                    m.put(ATTRIBUTE_NAME_STATENUMS, objCurrent.getString("statenum"));
             }
             else{
-                m.put(ATTRIBUTE_NAME_STATENUMS, "noData");
+                m.put(ATTRIBUTE_NAME_STATENUMS, objCurrent.getString("garagenum"));
             }
             if (objCurrent.has("time")) {
                 String inputDateStr=objCurrent.getString("time");
