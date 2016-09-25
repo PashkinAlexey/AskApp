@@ -4,6 +4,6 @@
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="list_font_size">17sp</dimen>
     <dimen name="list_title_size">18sp</dimen>
-    <dimen name="list_font_left_padding">0sp</dimen>
-    <dimen name="list_margins">10sp</dimen>
+    <dimen name="list_font_left_padding">0dp</dimen>
+    <dimen name="main_margins">10dp</dimen>
 </resources>

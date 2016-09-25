@@ -44,7 +44,6 @@ public class MainActivity extends AppCompatActivity {
     final String ATTRIBUTE_NAME_TIME = "time";
     final String URL="http://195.93.229.66:4242/main?func=state&uid=d8f9e2b6-678d-4036-ae31-9e7967d2987f&fuel&out=json";
     boolean listThread=true;
-    boolean writing=false;
     ListView lvMain;
     BufferedWriter bw;
     Thread t;
@@ -56,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        lvMain=(ListView)findViewById(R.id.listView);
+        lvMain=(ListView)findViewById(R.id.mainListView);
 
         dbHelper = new DbHelper(this);
         database = dbHelper.getWritableDatabase();
@@ -117,49 +116,6 @@ public class MainActivity extends AppCompatActivity {
                             msg = h.obtainMessage(1, 0, 0, handMap);
                             //передаем сообщение
                             h.sendMessage(msg);
-
-                            //_________________________________________________________________________ЗАПИСЬ В ФАЙЛ
-                            // отрываем поток для записи
-                            /*try
-                            {
-                                writing=true;
-                                bw = new BufferedWriter(new OutputStreamWriter(
-                                        openFileOutput("MyTestFile", MODE_PRIVATE)));
-                                // пишем данные
-                                bw.write("держимое файла");
-                                // закрываем поток
-                                Log.d(TAG, "Файл записан");
-                                bw.close();
-                                writing=false;
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-
-                            //_________________________________________________________________________Чтение с ФАЙЛА
-                            // открываем поток для чтения
-                            while(true) {
-                                if (!writing)
-                                {
-                                    Log.d(TAG, "Начало цикла");
-                                    try{
-                                        BufferedReader br = new BufferedReader(new InputStreamReader(
-                                                openFileInput("MyTestFile")));
-                                        String str = "123";
-                                        // читаем содержимое
-                                        while ((str = br.readLine())
-                                                != null) {
-                                            Log.d(TAG, str);
-                                        }
-                                    } catch (FileNotFoundException e) {
-                                        e.printStackTrace();
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                    break;
-                                }
-                            }*/
                         } catch (JSONException e) {
                             e.printStackTrace();
                         } catch (IOException e) {
@@ -204,6 +160,9 @@ public class MainActivity extends AppCompatActivity {
             if (currObject.has("fuel")) {
                 fuel = currObject.getString(ATTRIBUTE_NAME_FUEL);
             }
+            //Задаем скорость траспорта
+            String speed = currObject.getString(ATTRIBUTE_NAME_SPEED);
+
             ContentValues contentValues = new ContentValues();
             /*Log.d(TAG, "id траспорта "+i+" = "+trId);
             Log.d(TAG, "время записи траспорта "+i+" = "+time);
@@ -211,12 +170,9 @@ public class MainActivity extends AppCompatActivity {
             contentValues.put(DbHelper.KEY_TR_ID, trId);
             contentValues.put(DbHelper.KEY_TIME, time);
             contentValues.put(DbHelper.KEY_FUEL, fuel);
+            contentValues.put(DbHelper.KEY_SPEED, speed);
             database.insert(DbHelper.TABLE_CONTACTS, null, contentValues);
         }
-    }
-
-    public boolean isWriting(){
-        return writing;
     }
 
     public SimpleAdapter listCreator(JSONObject jObj) throws JSONException {
