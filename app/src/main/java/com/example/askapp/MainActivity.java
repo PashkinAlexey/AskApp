@@ -1,6 +1,8 @@
 package com.example.askapp;
 
+import android.content.ContentValues;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
@@ -17,7 +19,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -32,11 +39,18 @@ public class MainActivity extends AppCompatActivity {
     final String TAG="myLogs";
     final String ATTRIBUTE_NAME_STATENUMS = "statenums";
     final String ATTRIBUTE_NAME_FUEL = "fuel";
+    final String ATTRIBUTE_NAME_ID = "id";
     final String ATTRIBUTE_NAME_SPEED = "speed";
     final String ATTRIBUTE_NAME_TIME = "time";
     final String URL="http://195.93.229.66:4242/main?func=state&uid=d8f9e2b6-678d-4036-ae31-9e7967d2987f&fuel&out=json";
+    boolean listThread=true;
+    boolean writing=false;
     ListView lvMain;
+    BufferedWriter bw;
+    Thread t;
     Handler h;
+    DbHelper dbHelper;
+    SQLiteDatabase database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,12 +58,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         lvMain=(ListView)findViewById(R.id.listView);
 
+        dbHelper = new DbHelper(this);
+        database = dbHelper.getWritableDatabase();
+
         h = new Handler() {
             public void handleMessage(android.os.Message msg) {
                 //получаем мап
-                Map<String, Object> handMap=(Map<String, Object>)msg.obj;
-                //получаем объекты из мап
-                final JSONObject JOBJ=(JSONObject)handMap.get("json");
+                final Map<String, Object> handMap=(Map<String, Object>)msg.obj;
+                //получаем адаптер из мап
                 SimpleAdapter sAdapter=(SimpleAdapter)handMap.get("adapter");
                 //отключаем видимый Scroll
                 lvMain.setScrollContainer(false);
@@ -64,10 +80,13 @@ public class MainActivity extends AppCompatActivity {
                     public void onItemClick(AdapterView<?> parent, View view,
                                             int position, long id) {
                         try {
-                            JSONArray jArr=JOBJ.getJSONArray("objects");
+                            //получаем адаптер из мап
+                            final JSONObject jObj=(JSONObject)handMap.get("json");
+                            JSONArray jArr=jObj.getJSONArray("objects");
                             JSONObject clickedObject=(JSONObject)jArr.get(position);
                             String clickedId=clickedObject.getString("id");
                             Intent intent= new Intent(MainActivity.this, TransportActivity.class);
+                            intent.putExtra("clickedId", clickedId);
                             intent.putExtra("clickedId", clickedId);
                             startActivity(intent);
                         } catch (JSONException e) {
@@ -77,36 +96,127 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         };
-        Thread t = new Thread(new Runnable() {
+        t = new Thread(new Runnable() {
             Message msg;
             public void run() {
-                while(true)
-                {
-                    try {
-                        JSONObject jObj=JSONParser.getJSONFromUrl(URL);
-                        SimpleAdapter sAdapter=listCreator(jObj);
-                        //создаем мап для передачи 2х объектов хендлеру
-                        Map<String, Object> handMap = new HashMap<String, Object>();
-                        handMap.put("adapter",sAdapter);
-                        handMap.put("json",jObj);
-                        //создаем сообщение для хендлера
-                        msg = h.obtainMessage(1, 0, 0, handMap);
-                        //передаем сообщение
-                        h.sendMessage(msg);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(10000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+                while(true) {
+                    if (listThread)
+                    {
+                        try {
+                            JSONObject jObj = JSONParser.getJSONFromUrl(URL);
+                            //Log.d(TAG, "Джесон получен");
+                            SimpleAdapter sAdapter = listCreator(jObj);
+                            //создаем мап для передачи 2х объектов хендлеру
+                            Map<String, Object> handMap = new HashMap<String, Object>();
+                            handMap.put("adapter", sAdapter);
+                            handMap.put("json", jObj);
+
+                            //Делаем запись в БД
+                            bdWrite(jObj);
+                            //создаем сообщение для хендлера
+                            msg = h.obtainMessage(1, 0, 0, handMap);
+                            //передаем сообщение
+                            h.sendMessage(msg);
+
+                            //_________________________________________________________________________ЗАПИСЬ В ФАЙЛ
+                            // отрываем поток для записи
+                            /*try
+                            {
+                                writing=true;
+                                bw = new BufferedWriter(new OutputStreamWriter(
+                                        openFileOutput("MyTestFile", MODE_PRIVATE)));
+                                // пишем данные
+                                bw.write("держимое файла");
+                                // закрываем поток
+                                Log.d(TAG, "Файл записан");
+                                bw.close();
+                                writing=false;
+                            } catch (FileNotFoundException e) {
+                                e.printStackTrace();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+                            //_________________________________________________________________________Чтение с ФАЙЛА
+                            // открываем поток для чтения
+                            while(true) {
+                                if (!writing)
+                                {
+                                    Log.d(TAG, "Начало цикла");
+                                    try{
+                                        BufferedReader br = new BufferedReader(new InputStreamReader(
+                                                openFileInput("MyTestFile")));
+                                        String str = "123";
+                                        // читаем содержимое
+                                        while ((str = br.readLine())
+                                                != null) {
+                                            Log.d(TAG, str);
+                                        }
+                                    } catch (FileNotFoundException e) {
+                                        e.printStackTrace();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    break;
+                                }
+                            }*/
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(5000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
         });
         t.start();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        //listThread=true;
+        Log.d(TAG, "onStart");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        //listThread=false;
+        Log.d(TAG, "onStop");
+    }
+
+    public void bdWrite(JSONObject jObj) throws JSONException {
+        JSONArray jArr=jObj.getJSONArray("objects");
+        for (int i=0; i<jArr.length(); i++){
+            JSONObject currObject=(JSONObject)jArr.get(i);
+            //Задаем id траспорта
+            String trId=currObject.getString(ATTRIBUTE_NAME_ID);
+            //Задаем время запроса
+            Long time=System.currentTimeMillis();
+            //Задаем количество топлива траспорта
+            String fuel="noData";
+            if (currObject.has("fuel")) {
+                fuel = currObject.getString(ATTRIBUTE_NAME_FUEL);
+            }
+            ContentValues contentValues = new ContentValues();
+            /*Log.d(TAG, "id траспорта "+i+" = "+trId);
+            Log.d(TAG, "время записи траспорта "+i+" = "+time);
+            Log.d(TAG, "Топливо траспорта "+i+" = "+fuel);*/
+            contentValues.put(DbHelper.KEY_TR_ID, trId);
+            contentValues.put(DbHelper.KEY_TIME, time);
+            contentValues.put(DbHelper.KEY_FUEL, fuel);
+            database.insert(DbHelper.TABLE_CONTACTS, null, contentValues);
+        }
+    }
+
+    public boolean isWriting(){
+        return writing;
     }
 
     public SimpleAdapter listCreator(JSONObject jObj) throws JSONException {
@@ -152,7 +262,6 @@ public class MainActivity extends AppCompatActivity {
             }
             data.add(m);
         }
-        Log.d(TAG, " ");
         String[] from = {ATTRIBUTE_NAME_STATENUMS, ATTRIBUTE_NAME_FUEL,
                 ATTRIBUTE_NAME_SPEED, ATTRIBUTE_NAME_TIME };
         int[] to = { R.id.statenum, R.id.fuel, R.id.speed, R.id.time };
