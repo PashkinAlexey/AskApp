@@ -11,14 +11,14 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DbHelper  extends SQLiteOpenHelper {
 
     public static final int DATABASE_VERSION = 1;
-    public static final String DATABASE_NAME = "fuelDb";
-    public static final String TABLE_CONTACTS = "timeFuel";
+    public static final String DATABASE_NAME = "fuelDb"; //Название БД
+    public static final String TABLE_CONTACTS = "timeFuel"; //Название таблицы
 
-    public static final String KEY_ID = "_id";
-    public static final String KEY_TR_ID = "transportId";
-    public static final String KEY_TIME = "time";
-    public static final String KEY_FUEL = "fuel";
-    public static final String KEY_SPEED = "speed";
+    public static final String KEY_ID = "_id"; //Автоинкремент
+    public static final String KEY_TR_ID = "transportId"; //Id трансопрта с сервера
+    public static final String KEY_TIME = "time"; //время записи в таблицу
+    public static final String KEY_FUEL = "fuel"; //топливо
+    public static final String KEY_SPEED = "speed"; //скорость
 
     public DbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);

@@ -45,8 +45,8 @@ public class TransportActivity extends AppCompatActivity {
         Cursor cursor = database.query(DbHelper.TABLE_CONTACTS, null, selection, null, null, null,null);
 
         ArrayList<Map<String, String>> data = new ArrayList<Map<String, String>>();
-        long speed=0; //будет хранить последнее показание скорости
-        String fuel="noData"; //будет хранить последнее показание топлива
+        long speed=0; //будет хранить последнее показание скорости после завершения цикла
+        String fuel="noData"; //будет хранить последнее показание топлива после завершения цикла
         if (cursor.moveToFirst()) {
             //int trIdIndex = cursor.getColumnIndex(DbHelper.KEY_TR_ID);
             int timeIndex = cursor.getColumnIndex(DbHelper.KEY_TIME);
@@ -75,13 +75,14 @@ public class TransportActivity extends AppCompatActivity {
 
         //назначаем адаптер списку
         clickedLView.setAdapter(sAdapter);
-        //назначаем скорость шкале скорости
+        //ставим значение шкале скорости
         if (speed==0){
             speedBar.setProgress(0);
         }
         else {
             speedBar.setProgress((int)(100/(160.0/speed)));
         }
+        //ставим значение шкале топлива
         if (fuel.equals("noData")){
             fuelBar.setVisibility(View.GONE);
             fuelTextBar.setVisibility(View.GONE);
