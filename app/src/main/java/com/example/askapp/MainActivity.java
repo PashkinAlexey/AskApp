@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     final String ATTRIBUTE_NAME_ID = "id";
     final String ATTRIBUTE_NAME_SPEED = "speed";
     final String ATTRIBUTE_NAME_TIME = "time";
+    final int STATUS_ERROR=404;
     final String URL="http://195.93.229.66:4242/main?func=state&uid=d8f9e2b6-678d-4036-ae31-9e7967d2987f&fuel&out=json";
     boolean listThread=true;
     ListView lvMain;
@@ -58,46 +59,52 @@ public class MainActivity extends AppCompatActivity {
 
         h = new Handler() {
             public void handleMessage(android.os.Message msg) {
-                //получаем мап
-                final Map<String, Object> handMap=(Map<String, Object>)msg.obj;
-                //получаем адаптер из мап
-                SimpleAdapter sAdapter=(SimpleAdapter)handMap.get("adapter");
-                //отключаем видимый Scroll
-                lvMain.setScrollContainer(false);
-                //сохраняем положение ListView
-                Parcelable state = lvMain.onSaveInstanceState();
-                //обновляем ListView
-                lvMain.setAdapter(sAdapter);
-                //Восстанавливаем положение ListView
-                lvMain.onRestoreInstanceState(state);
-                //вешаем обработчик нажатия
-                lvMain.setOnItemClickListener(new OnItemClickListener() {
-                    public void onItemClick(AdapterView<?> parent, View view,
-                                            int position, long id) {
-                        try {
-                            //получаем адаптер из мап
-                            final JSONObject jObj=(JSONObject)handMap.get("json");
-                            JSONArray jArr=jObj.getJSONArray("objects");
-                            JSONObject clickedObject=(JSONObject)jArr.get(position);
-                            String clickedId=clickedObject.getString("id"); //серверный Id нажатого элемента
-                            String clickedStateNum; //гос. номер нажатого элемента
-                            if (clickedObject.getString("statenum").equals("")){
-                                clickedStateNum=clickedObject.getString("garagenum");
+                if (msg.what==STATUS_ERROR)
+                {
+                    Toast toast = Toast.makeText(MainActivity.this,"Ошибка загрузки данных", Toast.LENGTH_SHORT);
+                    toast.show();
+                }
+                else{
+                    //получаем мап
+                    final Map<String, Object> handMap=(Map<String, Object>)msg.obj;
+                    //получаем адаптер из мап
+                    SimpleAdapter sAdapter=(SimpleAdapter)handMap.get("adapter");
+                    //отключаем видимый Scroll
+                    lvMain.setScrollContainer(false);
+                    //сохраняем положение ListView
+                    Parcelable state = lvMain.onSaveInstanceState();
+                    //обновляем ListView
+                    lvMain.setAdapter(sAdapter);
+                    //Восстанавливаем положение ListView
+                    lvMain.onRestoreInstanceState(state);
+                    //вешаем обработчик нажатия
+                    lvMain.setOnItemClickListener(new OnItemClickListener() {
+                        public void onItemClick(AdapterView<?> parent, View view,
+                                                int position, long id) {
+                            try {
+                                //получаем адаптер из мап
+                                final JSONObject jObj = (JSONObject) handMap.get("json");
+                                JSONArray jArr = jObj.getJSONArray("objects");
+                                JSONObject clickedObject = (JSONObject) jArr.get(position);
+                                String clickedId = clickedObject.getString("id"); //серверный Id нажатого элемента
+                                String clickedStateNum; //гос. номер нажатого элемента
+                                if (clickedObject.getString("statenum").equals("")) {
+                                    clickedStateNum = clickedObject.getString("garagenum");
+                                } else {
+                                    clickedStateNum = clickedObject.getString("statenum");
+                                }
+                                Intent intent = new Intent(MainActivity.this, TransportActivity.class);
+                                intent.putExtra("clickedId", clickedId);
+                                intent.putExtra("clickedStateNum", clickedStateNum);
+                                startActivity(intent);
+                            } catch (JSONException e) {
+                                Toast toast = Toast.makeText(MainActivity.this,
+                                        "Ошибка данных", Toast.LENGTH_SHORT);
+                                toast.show();
                             }
-                            else{
-                                clickedStateNum=clickedObject.getString("statenum");
-                            }
-                            Intent intent= new Intent(MainActivity.this, TransportActivity.class);
-                            intent.putExtra("clickedId", clickedId);
-                            intent.putExtra("clickedStateNum", clickedStateNum);
-                            startActivity(intent);
-                        } catch (JSONException e) {
-                            Toast toast = Toast.makeText(getApplicationContext(),
-                                    "Ошибка данных", Toast.LENGTH_SHORT);
-                            toast.show();
-                        }
-                    }
-                });
+                        };
+                    });
+                }
             }
         };
         t = new Thread(new Runnable() {
@@ -119,13 +126,11 @@ public class MainActivity extends AppCompatActivity {
                             //передаем сообщение
                             h.sendMessage(msg);
                         } catch (JSONException e) {
-                            Toast toast = Toast.makeText(getApplicationContext(),
-                                    "Ошибка загрузки данных", Toast.LENGTH_SHORT);
-                            toast.show();
+                            h.sendEmptyMessage(STATUS_ERROR);
+                            e.printStackTrace();
                         } catch (IOException e) {
-                            Toast toast = Toast.makeText(getApplicationContext(),
-                                    "Ошибка загрузки данных", Toast.LENGTH_SHORT);
-                            toast.show();
+                            h.sendEmptyMessage(STATUS_ERROR);
+                            e.printStackTrace();
                         }
                         try {
                             TimeUnit.MILLISECONDS.sleep(5000);
@@ -178,8 +183,7 @@ public class MainActivity extends AppCompatActivity {
                     time=outputFormat.format(date);
                 } catch (ParseException e) {
                     time=inputDateStr;
-                    Toast toast = Toast.makeText(getApplicationContext(),
-                            "Ошибка даты", Toast.LENGTH_SHORT);
+                    Toast toast = Toast.makeText(this,"Ошибка даты", Toast.LENGTH_SHORT);
                     toast.show();
                 }
             }

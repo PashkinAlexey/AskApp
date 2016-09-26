@@ -23,9 +23,8 @@ public class TransportActivity extends AppCompatActivity {
     DbHelper dbHelper;
     SQLiteDatabase database;
     ListView clickedLView;
-    ProgressBar speedBar;
-    ProgressBar fuelBar;
-    TextView fuelTextBar;
+    ProgressBar speedBar,fuelBar;
+    TextView fuelTextBar,stateTitle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,11 +32,14 @@ public class TransportActivity extends AppCompatActivity {
         setContentView(R.layout.activity_transport);
         Intent intent=getIntent();
         String clickedId=intent.getStringExtra("clickedId");
+        String clickedStateNum=intent.getStringExtra("clickedStateNum");
         clickedLView=(ListView)findViewById(R.id.clickedLView);
         speedBar=(ProgressBar)findViewById(R.id.speedBar);
         fuelBar=(ProgressBar)findViewById(R.id.fuelBar);
         fuelTextBar=(TextView) findViewById(R.id.fuelTextBar);
+        stateTitle=(TextView) findViewById(R.id.stateTitle);
 
+        stateTitle.setText(clickedStateNum);
         dbHelper = new DbHelper(this);
         database=dbHelper.getReadableDatabase();
 
