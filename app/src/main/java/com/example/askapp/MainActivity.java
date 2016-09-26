@@ -125,10 +125,10 @@ public class MainActivity extends AppCompatActivity {
                             h.sendMessage(msg);
                         } catch (JSONException e) {
                             h.sendEmptyMessage(STATUS_ERROR);
-                            e.printStackTrace();
+                            //e.printStackTrace();
                         } catch (IOException e) {
                             h.sendEmptyMessage(STATUS_ERROR);
-                            e.printStackTrace();
+                            //e.printStackTrace();
                         }
                         try {
                             TimeUnit.MILLISECONDS.sleep(5000);
