@@ -3,11 +3,11 @@ package com.example.askapp;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -19,7 +19,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedWriter;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -42,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     final String URL="http://195.93.229.66:4242/main?func=state&uid=d8f9e2b6-678d-4036-ae31-9e7967d2987f&fuel&out=json";
     boolean listThread=true;
     ListView lvMain;
-    BufferedWriter bw;
     Thread t;
     Handler h;
     DbHelper dbHelper;
