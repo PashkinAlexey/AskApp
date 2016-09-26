@@ -8,23 +8,19 @@ import android.os.Message;
 import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -83,13 +79,22 @@ public class MainActivity extends AppCompatActivity {
                             final JSONObject jObj=(JSONObject)handMap.get("json");
                             JSONArray jArr=jObj.getJSONArray("objects");
                             JSONObject clickedObject=(JSONObject)jArr.get(position);
-                            String clickedId=clickedObject.getString("id");
+                            String clickedId=clickedObject.getString("id"); //серверный Id нажатого элемента
+                            String clickedStateNum; //гос. номер нажатого элемента
+                            if (clickedObject.getString("statenum").equals("")){
+                                clickedStateNum=clickedObject.getString("garagenum");
+                            }
+                            else{
+                                clickedStateNum=clickedObject.getString("statenum");
+                            }
                             Intent intent= new Intent(MainActivity.this, TransportActivity.class);
                             intent.putExtra("clickedId", clickedId);
-                            intent.putExtra("clickedId", clickedId);
+                            intent.putExtra("clickedStateNum", clickedStateNum);
                             startActivity(intent);
                         } catch (JSONException e) {
-                            e.printStackTrace();
+                            Toast toast = Toast.makeText(getApplicationContext(),
+                                    "Ошибка данных", Toast.LENGTH_SHORT);
+                            toast.show();
                         }
                     }
                 });
@@ -103,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
                     {
                         try {
                             JSONObject jObj = JSONParser.getJSONFromUrl(URL);
-                            SimpleAdapter sAdapter = listCreator(jObj);
+                            SimpleAdapter sAdapter = adapterCreator(jObj);
                             //создаем мап для передачи 2х объектов хендлеру
                             Map<String, Object> handMap = new HashMap<String, Object>();
                             handMap.put("adapter", sAdapter);
@@ -114,9 +119,13 @@ public class MainActivity extends AppCompatActivity {
                             //передаем сообщение
                             h.sendMessage(msg);
                         } catch (JSONException e) {
-                            e.printStackTrace();
+                            Toast toast = Toast.makeText(getApplicationContext(),
+                                    "Ошибка загрузки данных", Toast.LENGTH_SHORT);
+                            toast.show();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            Toast toast = Toast.makeText(getApplicationContext(),
+                                    "Ошибка загрузки данных", Toast.LENGTH_SHORT);
+                            toast.show();
                         }
                         try {
                             TimeUnit.MILLISECONDS.sleep(5000);
@@ -139,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
         database.insert(DbHelper.TABLE_CONTACTS, null, contentValues);
     }
 
-    public SimpleAdapter listCreator(JSONObject jObj) throws JSONException {
+    public SimpleAdapter adapterCreator(JSONObject jObj) throws JSONException {
         JSONArray objects;
         ArrayList<Map<String, Object>> data = new ArrayList<Map<String, Object>>();
         Map<String, Object> m;
@@ -153,11 +162,11 @@ public class MainActivity extends AppCompatActivity {
             //Парсинг айдишника
             trId=objCurrent.getString(ATTRIBUTE_NAME_ID);
             //Парсинг гос. номера
-            if (!objCurrent.getString("statenum").equals("")){
-                statenum=objCurrent.getString("statenum");
+            if (objCurrent.getString("statenum").equals("")){
+                statenum=objCurrent.getString("garagenum");
             }
             else{
-                statenum=objCurrent.getString("garagenum");
+                statenum=objCurrent.getString("statenum");
             }
             //Парсинг времени
             if (objCurrent.has("time")) {
@@ -168,8 +177,10 @@ public class MainActivity extends AppCompatActivity {
                     Date date = inputFormat.parse(inputDateStr);
                     time=outputFormat.format(date);
                 } catch (ParseException e) {
-                    e.printStackTrace();
                     time=inputDateStr;
+                    Toast toast = Toast.makeText(getApplicationContext(),
+                            "Ошибка даты", Toast.LENGTH_SHORT);
+                    toast.show();
                 }
             }
             else{
